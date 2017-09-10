@@ -1,12 +1,13 @@
 import java.io.File
+
 import scala.io.{Source, StdIn}
 
 
 object SearchApplication extends App {
 
   /** List text files in a given directory */
-  def listTextFiles(dirname: String): Seq[File] = {
-    new File(dirname).listFiles.filter(_.getName.endsWith(".txt"))
+  def listTextFiles(dir: File): Seq[File] = {
+    dir.listFiles.filter(_.getName.endsWith(".txt"))
   }
 
   /** Defines expression(s) to quit the search console */
@@ -17,7 +18,9 @@ object SearchApplication extends App {
   // -- console interaction
   args match {
     case Array(dirname, dirnames @ _ *) => {
-      val files = (dirname +: dirnames) flatMap listTextFiles
+
+      val dirs = (dirname +: dirnames)
+      val files = dirs.map(dir => new File(dir)).filter(_.exists()).flatMap(file => listTextFiles(file))
       val index = SimpleSearch.add(files, Map.empty[String, Set[String]])
       println(files.size + " files read in dir(s) [" + (dirname +: dirnames).mkString(", ") + "]")
 
@@ -28,8 +31,8 @@ object SearchApplication extends App {
           case x if isQuit(x) => println("bye!"); continue = false
           case x => {
             val searchWords = SimpleSearch.parse(x).toSet
-            val occurences = SimpleSearch.search(searchWords, index)
-            val rankedFiles = SimpleSearch.rank(searchWords, occurences)
+            val occurrences = SimpleSearch.search(searchWords, index)
+            val rankedFiles = SimpleSearch.rank(searchWords, occurrences)
 
             rankedFiles.take(10).foreach {
               case (filename, score) => println(s"$filename : $score %" )
